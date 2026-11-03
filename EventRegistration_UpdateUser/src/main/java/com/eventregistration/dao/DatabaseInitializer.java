@@ -9,7 +9,7 @@ public final class DatabaseInitializer {
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     username TEXT NOT NULL UNIQUE,
                     password TEXT NOT NULL,
-                    roles TEXT NOT NULL CHECK (roles IN ('TEACHER','STUDENT','ADMIN')),
+                    roles TEXT NOT NULL CHECK (roles IN ('ORGANIZER','PARTICIPANT','ADMIN')),
                     status TEXT NOT NULL DEFAULT 'PENDING'
                 )
                 """);
@@ -59,7 +59,11 @@ public final class DatabaseInitializer {
         } catch (SQLException e) { throw new IllegalStateException("Database initialization failed", e); }
     }
 
-    /** Older databases only allow TEACHER/STUDENT in users.roles; rebuild the table once to also allow ADMIN. */
+    /**
+     * Upgrades an older database once: rebuilds the users table so roles can only be
+     * ORGANIZER, PARTICIPANT or ADMIN, and converts the role names stored by older
+     * versions of this project (see the CASE below) so no existing accounts are lost.
+     */
     private static void allowAdminRole(Connection c) throws SQLException {
         String ddl = null;
         try (PreparedStatement ps = c.prepareStatement("SELECT sql FROM sqlite_master WHERE type = ? AND name = ?")) {
@@ -67,7 +71,7 @@ public final class DatabaseInitializer {
             ps.setString(2, "users");
             try (ResultSet rs = ps.executeQuery()) { if (rs.next()) ddl = rs.getString(1); }
         }
-        if (ddl == null || ddl.contains("'ADMIN'")) return;
+        if (ddl == null || ddl.contains("'ORGANIZER'")) return;
         try (Statement st = c.createStatement()) {
             st.execute("PRAGMA foreign_keys = OFF");
             st.execute("BEGIN");
@@ -77,11 +81,17 @@ public final class DatabaseInitializer {
                         id INTEGER PRIMARY KEY AUTOINCREMENT,
                         username TEXT NOT NULL UNIQUE,
                         password TEXT NOT NULL,
-                        roles TEXT NOT NULL CHECK (roles IN ('TEACHER','STUDENT','ADMIN')),
+                        roles TEXT NOT NULL CHECK (roles IN ('ORGANIZER','PARTICIPANT','ADMIN')),
                         status TEXT NOT NULL DEFAULT 'PENDING'
                     )
                     """);
-                st.execute("INSERT INTO users_new(id,username,password,roles,status) SELECT id,username,password,roles,status FROM users");
+                st.execute("""
+                    INSERT INTO users_new(id,username,password,roles,status)
+                    SELECT id, username, password,
+                           CASE roles WHEN 'TEACHER' THEN 'ORGANIZER' WHEN 'STUDENT' THEN 'PARTICIPANT' ELSE roles END,
+                           status
+                    FROM users
+                    """);
                 st.execute("DROP TABLE users");
                 st.execute("ALTER TABLE users_new RENAME TO users");
                 st.execute("COMMIT");

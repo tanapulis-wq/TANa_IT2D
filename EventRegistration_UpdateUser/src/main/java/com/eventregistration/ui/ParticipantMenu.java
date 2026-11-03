@@ -2,13 +2,13 @@ package com.eventregistration.ui;
 import com.eventregistration.dao.UserDao;
 import com.eventregistration.model.User;
 import java.util.Scanner;
-public class TeacherMenu {
+public class ParticipantMenu {
     private final Scanner scanner;
     private final UserDao userDao;
-    public TeacherMenu(Scanner scanner, UserDao userDao) { this.scanner=scanner; this.userDao=userDao; }
+    public ParticipantMenu(Scanner scanner, UserDao userDao) { this.scanner=scanner; this.userDao=userDao; }
     public void start(User user) {
         while (true) {
-            System.out.println("\n--- TEACHER MENU ---");
+            System.out.println("\n--- PARTICIPANT MENU ---");
             System.out.println("1. View account\n2. Logout");
             System.out.print("Choice: ");
             switch (scanner.nextLine().trim()) {

@@ -29,7 +29,7 @@ public class UserDao {
         } catch (Exception e) { return false; }
     }
     public boolean registerUser(String username, String password, String role) {
-        if (!role.equals("TEACHER") && !role.equals("STUDENT")) return false;
+        if (!role.equals("ORGANIZER") && !role.equals("PARTICIPANT")) return false;
         String sql = "INSERT INTO users(username,password,roles,status) VALUES(?,?,?,'PENDING')";
         try (Connection c = DatabaseConnection.getConnection(); PreparedStatement ps = c.prepareStatement(sql)) {
             ps.setString(1, username); ps.setString(2, hash(password)); ps.setString(3, role);
